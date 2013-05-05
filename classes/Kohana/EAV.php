@@ -128,11 +128,11 @@ class Kohana_EAV extends ORM {
 		
 		foreach($result as $property)
 		{
-			$this->_eav_object[$property->name] = array(
+			$this->_eav_object[$property->name] = new EAV_Attribute($property->name, array(
 					'id'    => $property->id,
 					'type'  => $property->type,
 					'value' => $property->value,
-			);
+			));
 		}
 	}
 	
@@ -143,7 +143,7 @@ class Kohana_EAV extends ORM {
 	 * @param string $value
 	 * @return Ambigous <mixed, array>
 	 */
-	public function attr($column, $value = NULL)
+	public function attr($column = NULL, $value = NULL)
 	{
 		// Check if the attributes are loaded
 		if( ! $this->_attributes_loaded)
@@ -151,16 +151,22 @@ class Kohana_EAV extends ORM {
 			$this->_get_attributes();
 		}
 		
+		// If no column is specified, return all attributes as objects
+		if( ! $column)
+		{
+			return $this->_eav_object;
+		}
+		
 		if($value)
 		{
 			// Get the attribute ID
 			$id = Arr::get($this->_eav_object, $column);
 			
-			$this->_eav_object[$column] = array(
+			$this->_eav_object[$column]->values(array(
 					'id'    => $id,
 					'type'  => gettype($value),
 					'value' => $value,
-			);
+			));
 		}
 		else
 		{
@@ -171,7 +177,8 @@ class Kohana_EAV extends ORM {
 			}
 		
 			// Get the attribute value
-			return Arr::get(Arr::get($this->_eav_object, $column), 'value');
+			$attribute = Arr::get($this->_eav_object, $column);
+			return ($attribute) ? $attribute->{$column} : NULL;
 		}
 	}
 	
