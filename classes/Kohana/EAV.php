@@ -74,16 +74,19 @@ class Kohana_EAV extends ORM {
 	{
 		parent::__construct($id);
 		
+		// See if the attributes table name is set
 		if( ! $this->_attributes_table_name)
 		{
 			$this->_attributes_table_name = strtolower(str_replace('Model_', '', get_class($this)) .'_attributes');
 		}
 		
+		// See if the values table name is set
 		if( ! $this->_values_table_name)
 		{
 			$this->_values_table_name = strtolower(str_replace('Model_', '', get_class($this)) .'_attribute_values');
 		}
 		
+		// See if the attribute table columns are filled in
 		if(count($this->_attributes_table_columns) == 0)
 		{
 			$this->_attributes_table_columns = array(
@@ -94,6 +97,7 @@ class Kohana_EAV extends ORM {
 			);
 		}
 		
+		// See if the values table columns are filled in
 		if(count($this->_values_table_columns) == 0)
 		{
 			$this->_values_table_columns = array(
