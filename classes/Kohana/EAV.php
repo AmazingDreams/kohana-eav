@@ -22,7 +22,7 @@ class Kohana_EAV extends ORM {
 		return new $model($id);
 	}
 	
-	public function __construct($id)
+	public function __construct($id = NULL)
 	{
 		parent::__construct($id);
 		
