@@ -14,8 +14,6 @@ class Kohana_EAV extends ORM {
 	
 	protected $_attributes_loaded = FALSE;
 	
-	protected $_joined_tables = FALSE;
-	
 	public static function factory($model, $id = NULL)
 	{
 		// Set class name
@@ -55,8 +53,6 @@ class Kohana_EAV extends ORM {
 					'value'         => 'value',
 			);
 		}
-		
-		$this->_join_tables();
 	}
 	
 	protected function _get_attributes()
@@ -113,23 +109,25 @@ class Kohana_EAV extends ORM {
 		}
 	}
 	
-	private function _join_tables()
-	{
-		$this->join($this->_attributes_table_name, 'LEFT')
-			->on($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'item_id'), '=', Inflector::singular($this->_table_name) .'.'. $this->_primary_key);
-		$this->join($this->_values_table_name, 'LEFT')
-			->on($this->_values_table_name .'.'. Arr::get($this->_values_table_columns, 'attribute_id'), '=', $this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'id'));
-		
-		$this->_joined_tables = TRUE;
-	}
-	
 	public function where_attr($attribute, $op, $value)
 	{			
-		$this->and_where_open()
-				->where($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'name'), '=', $attribute)
-				->and_where($this->_values_table_name .'.'. Arr::get($this->_values_table_columns, 'value'), '=', $value)
-			->and_where_close();
+		$this->join(array(
+				DB::select(
+						array('attr_t.'. Arr::get($this->_attributes_table_columns, 'item_id'), 'item_id'),
+						array('val_t.'. Arr::get($this->_values_table_columns, 'value'), 'value')
+				)->from(array($this->_values_table_name, 'val_t'))
+					->join(array($this->_attributes_table_name, 'attr_t'))->on('attr_t.'. Arr::get($this->_attributes_table_columns, 'id'), '=', 'val_t.'. Arr::get($this->_values_table_columns, 'attribute_id'))
+					->where('attr_t.'. Arr::get($this->_attributes_table_columns, 'name'), '=', $attribute)
+					->having('value', $op, $value),
+				md5($attribute),
+		), 'INNER')->on(md5($attribute) .'.item_id', '=', Inflector::singular($this->_table_name) .'.'. $this->_primary_key);
+							
 		
 		return $this;
+	}
+	
+	public function and_where_attr($attribute, $op, $value)
+	{
+		return $this->where_attr($attribute, $op, $value);
 	}
 }
