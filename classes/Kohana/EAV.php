@@ -14,6 +14,8 @@ class Kohana_EAV extends ORM {
 	
 	protected $_attributes_loaded = FALSE;
 	
+	protected $_joined_tables = FALSE;
+	
 	public static function factory($model, $id = NULL)
 	{
 		// Set class name
@@ -53,6 +55,8 @@ class Kohana_EAV extends ORM {
 					'value'         => 'value',
 			);
 		}
+		
+		$this->_join_tables();
 	}
 	
 	protected function _get_attributes()
@@ -107,5 +111,25 @@ class Kohana_EAV extends ORM {
 			// Get the attribute value
 			return Arr::get(Arr::get($this->_eav_object, $column), 'value');
 		}
+	}
+	
+	private function _join_tables()
+	{
+		$this->join($this->_attributes_table_name, 'LEFT')
+			->on($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'item_id'), '=', Inflector::singular($this->_table_name) .'.'. $this->_primary_key);
+		$this->join($this->_values_table_name, 'LEFT')
+			->on($this->_values_table_name .'.'. Arr::get($this->_values_table_columns, 'attribute_id'), '=', $this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'id'));
+		
+		$this->_joined_tables = TRUE;
+	}
+	
+	public function where_attr($attribute, $op, $value)
+	{			
+		$this->and_where_open()
+				->where($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'name'), '=', $attribute)
+				->and_where($this->_values_table_name .'.'. Arr::get($this->_values_table_columns, 'value'), '=', $value)
+			->and_where_close();
+		
+		return $this;
 	}
 }
