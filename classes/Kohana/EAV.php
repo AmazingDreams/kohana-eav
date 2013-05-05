@@ -18,26 +18,58 @@
  */
 class Kohana_EAV extends ORM {
 	
+	/**
+	 * Stores the table name for the attributes table
+	 * @var string    table name
+	 */
 	protected $_attributes_table_name = NULL;
 	
+	/**
+	 * Stores the table name for the values table
+	 * @var string    table name
+	 */
 	protected $_values_table_name = NULL;
 	
+	/**
+	 * Stores the column information for the attributes table
+	 * @var array     column names
+	 */
 	protected $_attributes_table_columns = array();
 	
+	/**
+	 * Stores the column information for the values table
+	 * @var array    column names
+	 */
 	protected $_values_table_columns = array();
 	
+	/**
+	 * Stores the attribute values and information
+	 * @var array    attributes
+	 */
 	protected $_eav_object = array();
 	
+	/**
+	 * @var bool
+	 */
 	protected $_attributes_loaded = FALSE;
 	
+	/**
+	 * An alias method for ORM::factory, you can use both methods
+	 * 
+	 * @param string  $model
+	 * @param mixed   $id
+	 * @return EAV
+	 */
 	public static function factory($model, $id = NULL)
 	{
-		// Set class name
-		$model = 'Model_'.$model;
-
-		return new $model($id);
+		return ORM::factory($model, $id);
 	}
 	
+	/**
+	 * Constructs a new model and leaves the rest to ORM
+	 * 
+	 * @param mixed $id
+	 */
 	public function __construct($id = NULL)
 	{
 		parent::__construct($id);
@@ -71,8 +103,12 @@ class Kohana_EAV extends ORM {
 		}
 	}
 	
+	/**
+	 * Gets existing attribute info from the tables
+	 */
 	protected function _get_attributes()
 	{
+		// Flag the attributes as loaded
 		$this->_attributes_loaded = TRUE;
 		
 		$result = DB::select(
@@ -88,11 +124,21 @@ class Kohana_EAV extends ORM {
 		
 		foreach($result as $property)
 		{
-			settype($property->value, $property->type);
-			$this->attr($property->name, $property->value);
+			$this->_eav_object[$property->name] = array(
+					'id'    => $property->id,
+					'type'  => $property->type,
+					'value' => $property->value,
+			);
 		}
 	}
 	
+	/**
+	 * Gets or sets a (new) attribute
+	 * 
+	 * @param unknown $column
+	 * @param string $value
+	 * @return Ambigous <mixed, array>
+	 */
 	public function attr($column, $value = NULL)
 	{
 		// Check if the attributes are loaded
@@ -125,8 +171,29 @@ class Kohana_EAV extends ORM {
 		}
 	}
 	
+	/**
+	 * Alias for and_where_attr
+	 *
+	 * @param string  $attribute
+	 * @param string  $op
+	 * @param mixed   $value
+	 * @return Kohana_EAV
+	 */
 	public function where_attr($attribute, $op, $value)
-	{			
+	{
+		return $this->and_where_attr($attribute, $op, $value);
+	}
+	
+	/**
+	 * Simulates an 'AND WHERE' clause
+	 * 
+	 * @param string  $attribute
+	 * @param string  $op
+	 * @param mixed   $value
+	 * @return Kohana_EAV
+	 */
+	public function and_where_attr($attribute, $op, $value)
+	{
 		$this->join(array(
 				DB::select(
 						array('attr_t.'. Arr::get($this->_attributes_table_columns, 'item_id'), 'item_id'),
@@ -139,11 +206,7 @@ class Kohana_EAV extends ORM {
 		), 'INNER')->on(md5($attribute) .'.item_id', '=', Inflector::singular($this->_table_name) .'.'. $this->_primary_key);
 							
 		
+		// Return self for chaineability
 		return $this;
-	}
-	
-	public function and_where_attr($attribute, $op, $value)
-	{
-		return $this->where_attr($attribute, $op, $value);
 	}
 }
