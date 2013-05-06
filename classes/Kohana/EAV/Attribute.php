@@ -8,8 +8,8 @@
  */
 class Kohana_EAV_Attribute {
 	
-	const ATTRIBUTES = '_attribute_columns';
-	const VALUES     = '_values_columns';
+	const ATTRIBUTES = '_attribute_part';
+	const VALUES     = '_values_part';
 	
 	/**
 	 * Holds all the other properties of this attribute
@@ -145,14 +145,7 @@ class Kohana_EAV_Attribute {
 		if($table != self::ATTRIBUTES AND $table != self::VALUES)
 			throw new Kohana_Exception('No valid value specified');
 		
-		$values = array();
-			
-		foreach($this->{$table} as $column)
-		{
-			$values[] = $this->{$column};
-		}
-		
-		return $values;
+		return array_values($this->{table});
 	}
 	
 	/**
