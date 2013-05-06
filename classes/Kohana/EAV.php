@@ -93,16 +93,32 @@ class Kohana_EAV extends ORM {
 		}
 	}
 	
+	/**
+	 * Get all information regarding the attributes table
+	 * 
+	 * @return Ambigous <mixed, array>
+	 */
 	public function attributes_table()
 	{
 		return Arr::get($this->_eav_table_info, 'attributes', array());
 	}
 	
+	/**
+	 * Get only the attributes table name
+	 * 
+	 * @return Ambigous <mixed, array>
+	 */
 	public function attributes_table_name()
 	{
 		return Arr::get($this->attributes_table(), 'name');
 	}
 	
+	/**
+	 * Get all columns, or one column name only
+	 * 
+	 * @param string $column
+	 * @return Ambigous <mixed, array>
+	 */
 	public function attributes_table_columns($column = NULL)
 	{
 		$columns = Arr::get($this->attributes_table(), 'columns', array());
@@ -115,16 +131,32 @@ class Kohana_EAV extends ORM {
 		return $columns;
 	}
 	
+	/**
+	 * Get all information regarding the values table
+	 * 
+	 * @return Ambigous <mixed, array>
+	 */
 	public function values_table()
 	{
 		return Arr::get($this->_eav_table_info, 'values', array());
 	}
 	
+	/**
+	 * Get the name of the values table
+	 * 
+	 * @return Ambigous <mixed, array>
+	 */
 	public function values_table_name()
 	{
 		return Arr::get($this->_eav_table_info['values'], 'name');
 	}
 	
+	/**
+	 * Get all columns, or one column name only
+	 * 
+	 * @param string $column
+	 * @return Ambigous <mixed, array>
+	 */
 	public function values_table_columns($column = NULL)
 	{
 		$columns = Arr::get($this->values_table(), 'columns', array());
@@ -215,6 +247,13 @@ class Kohana_EAV extends ORM {
 		}
 	}
 	
+	/**
+	 * Saves this object and all child attributes
+	 * 
+	 * @see Kohana_ORM::save()
+	 * @param $validation
+	 * @return self
+	 */
 	public function save(Validation $validation = NULL)
 	{
 		parent::save();
