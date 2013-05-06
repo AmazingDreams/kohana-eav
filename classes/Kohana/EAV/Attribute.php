@@ -8,11 +8,8 @@
  */
 class Kohana_EAV_Attribute {
 	
-	/**
-	 * The name of the attribute 
-	 * @var string
-	 */	
-	public $name = NULL;
+	const ATTRIBUTES = '_attribute_columns';
+	const VALUES     = '_values_columns';
 	
 	/**
 	 * Holds all the other properties of this attribute
@@ -21,15 +18,25 @@ class Kohana_EAV_Attribute {
 	private $_object = array();
 	
 	/**
+	 * Holds the master object
+	 * @var EAV
+	 */
+	private $_master = NULL;
+	
+	private $_attribute_part = array();
+	private $_values_part = array();
+	
+	private $_query_type = NULL;
+	
+	/**
 	 * Creates a new EAV_Attribute
 	 * 
 	 * @param string $name
 	 * @param array  $row of properties
 	 */
-	public function __construct($name, $row)
+	public function __construct($row, $master)
 	{
-		$this->name = $name;
-		
+		$this->_master = $master;
 		$this->values($row);
 	}
 	
@@ -46,8 +53,78 @@ class Kohana_EAV_Attribute {
 			$this->{$key} = $value;
 		}
 		
+		foreach($this->_object as $key => $value)
+		{
+			if(in_array($key, $this->_master->attributes_table_columns()))
+			{
+				$this->_attribute_part[$key] = $value;
+			}
+			
+			if(in_array($key, $this->_master->values_table_columns()))
+			{
+				$this->_values_part[$key] = $value;
+			}
+		}
+		
 		// Return self for chaining
 		return $this;
+	}
+	
+	public function save()
+	{
+		if($this->id)
+		{
+			$array = array();
+
+			foreach($this->_attribute_part as $key => $value)
+			{
+				if($key != $this->_master->attributes_table_columns('id'))
+				{
+					$array[$key] = $value;
+				}
+			}
+			
+			DB::update($this->_master->attributes_table_name())
+					->set($array)
+					->where($this->_master->attributes_table_columns('id'), '=', $this->id)
+					->execute();
+
+			DB::update($this->_master->values_table_name())
+					->set($this->_values_part)
+					->where($this->_master->values_table_columns('attribute_id'), '=', $this->id)
+					->execute();
+		}
+		else
+		{
+			$this->_query_type = DATABASE::UPDATE;
+			
+			$this->id = DB::insert($this->_master->attributes_table_name(), $this->_master->attribute_table_columns())
+					->values($this->get_values(self::ATTRIBUTES))
+					->execute();
+			
+			DB::insert(
+					$this->_master->values_table_name(), 
+					Arr::merge(array($this->_master->values_table_columns('attribute_id')), $this->_master->values_table_columns())
+				)->values(Arr::merge(array($this->id), $this->get_values(self::VALUES)))
+					->execute();
+		}
+		
+		return $this;
+	}
+	
+	public function get_values($table)
+	{
+		if($table != self::ATTRIBUTES AND $table != self::VALUES)
+			throw new Kohana_Exception('No valid value specified');
+		
+		$values = array();
+			
+		foreach($this->{$table} as $column)
+		{
+			$values[] = $this->{$column};
+		}
+		
+		return $values;
 	}
 	
 	/**

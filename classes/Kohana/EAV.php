@@ -19,28 +19,14 @@
 class Kohana_EAV extends ORM {
 	
 	/**
-	 * Stores the table name for the attributes table
-	 * @var string    table name
+	 * Stores the information about the eav_tables
+	 * 
+	 * @var unknown
 	 */
-	protected $_attributes_table_name = NULL;
-	
-	/**
-	 * Stores the table name for the values table
-	 * @var string    table name
-	 */
-	protected $_values_table_name = NULL;
-	
-	/**
-	 * Stores the column information for the attributes table
-	 * @var array     column names
-	 */
-	protected $_attributes_table_columns = array();
-	
-	/**
-	 * Stores the column information for the values table
-	 * @var array    column names
-	 */
-	protected $_values_table_columns = array();
+	protected $_eav_table_info = array(
+			'attributes' => array(),
+			'values'     => array(),
+	);
 	
 	/**
 	 * Stores the attribute values and information
@@ -75,36 +61,80 @@ class Kohana_EAV extends ORM {
 		parent::__construct($id);
 		
 		// See if the attributes table name is set
-		if( ! $this->_attributes_table_name)
+		if( ! Arr::get($this->_eav_table_info['attributes'], 'name'))
 		{
-			$this->_attributes_table_name = strtolower(str_replace('Model_', '', get_class($this)) .'_attributes');
+			$this->_eav_table_info['attributes']['name'] = strtolower(str_replace('Model_', '', get_class($this)) .'_attributes');
 		}
 		
 		// See if the values table name is set
-		if( ! $this->_values_table_name)
+		if( ! Arr::get($this->_eav_table_info['values'], 'name'))
 		{
-			$this->_values_table_name = strtolower(str_replace('Model_', '', get_class($this)) .'_attribute_values');
+			$this->_eav_table_info['values']['name'] = strtolower(str_replace('Model_', '', get_class($this)) .'_attribute_values');
 		}
 		
 		// See if the attribute table columns are filled in
-		if(count($this->_attributes_table_columns) == 0)
+		if(count($this->attributes_table_columns()) == 0)
 		{
-			$this->_attributes_table_columns = array(
+			Arr::set_path($this->_eav_table_info, 'attributes.columns', array(
 					'id'      => 'id',
-					'item_id' => Inflector::singular($this->_table_name) .'_id',
+					'item_id' => Inflector::singular($this->table_name()) .'_id',
 					'type'    => 'type',
 					'name'    => 'name',
-			);
+			));
 		}
 		
 		// See if the values table columns are filled in
-		if(count($this->_values_table_columns) == 0)
+		if(count($this->values_table_columns()) == 0)
 		{
-			$this->_values_table_columns = array(
-					'attribute_id'  => Inflector::singular($this->_attributes_table_name) .'_id',
+			Arr::set_path($this->_eav_table_info, 'values.columns', array(
+					'attribute_id'  => Inflector::singular($this->attributes_table_name()) .'_id',
 					'value'         => 'value',
-			);
+			));
 		}
+	}
+	
+	public function attributes_table()
+	{
+		return Arr::get($this->_eav_table_info, 'attributes', array());
+	}
+	
+	public function attributes_table_name()
+	{
+		return Arr::get($this->attributes_table(), 'name');
+	}
+	
+	public function attributes_table_columns($column = NULL)
+	{
+		$columns = Arr::get($this->attributes_table(), 'columns', array());
+		
+		if($column)
+		{
+			return Arr::get($columns, $column);
+		}
+		
+		return $columns;
+	}
+	
+	public function values_table()
+	{
+		return Arr::get($this->_eav_table_info, 'values', array());
+	}
+	
+	public function values_table_name()
+	{
+		return Arr::get($this->_eav_table_info['values'], 'name');
+	}
+	
+	public function values_table_columns($column = NULL)
+	{
+		$columns = Arr::get($this->values_table(), 'columns', array());
+		
+		if($column)
+		{
+			return Arr::get($columns, $column);
+		}
+		
+		return $columns;
 	}
 	
 	/**
@@ -116,23 +146,27 @@ class Kohana_EAV extends ORM {
 		$this->_attributes_loaded = TRUE;
 		
 		$result = DB::select(
-				array($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'id'), 'id'),
-				array($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'name'), 'name'),
-				array($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'type'), 'type'),
-				array($this->_values_table_name .'.'. Arr::get($this->_values_table_columns, 'value'), 'value')
-		)->from($this->_values_table_name)
-		 ->join($this->_attributes_table_name)->on($this->_attributes_table_name .'.'. Arr::get($this->_attributes_table_columns, 'id'), '=', $this->_values_table_name .'.'. Arr::get($this->_values_table_columns, 'attribute_id'))
-		 ->where(Arr::get($this->_attributes_table_columns, 'item_id'), '=', $this->id)
+				array('attr_table.'. $this->attributes_table_columns('id'), 'id'),
+				array('attr_table.'. $this->attributes_table_columns('name'), 'name'),
+				array('attr_table.'. $this->attributes_table_columns('type'), 'type'),
+				array('val_table.'.  $this->values_table_columns('value'), 'value')
+		)->from(array($this->values_table_name(), 'val_table'))
+		 ->join(array($this->attributes_table_name(), 'attr_table'))->on('attr_table.'. $this->attributes_table_columns('id'), '=', 'val_table.'. $this->values_table_columns('attribute_id'))
+		 ->where('attr_table.'. $this->attributes_table_columns('item_id'), '=', $this->id)
 		 ->as_object()
 		 ->execute();
 		
 		foreach($result as $property)
 		{
-			$this->_eav_object[$property->name] = new EAV_Attribute($property->name, array(
-					'id'    => $property->id,
-					'type'  => $property->type,
-					'value' => $property->value,
-			));
+			$attribute = new EAV_Attribute(array(
+					'id'           => $property->id,
+					'name'         => $property->name,
+					'type'         => $property->type,
+					'value'        => $property->value,
+					'attribute_id' => $property->id,
+			), $this);
+			
+			$this->_eav_object[$property->name] = $attribute;
 		}
 	}
 	
@@ -163,9 +197,8 @@ class Kohana_EAV extends ORM {
 			$id = Arr::get($this->_eav_object, $column);
 			
 			$this->_eav_object[$column]->values(array(
-					'id'    => $id,
-					'type'  => gettype($value),
-					'value' => $value,
+					'type'    => gettype($value),
+					'value'   => $value,
 			));
 		}
 		else
@@ -180,6 +213,18 @@ class Kohana_EAV extends ORM {
 			$attribute = Arr::get($this->_eav_object, $column);
 			return ($attribute) ? $attribute->{$column} : NULL;
 		}
+	}
+	
+	public function save(Validation $validation = NULL)
+	{
+		parent::save();
+		
+		foreach($this->_eav_object as $attribute)
+		{
+			$attribute->save();
+		}
+		
+		return $this;
 	}
 	
 	/**
