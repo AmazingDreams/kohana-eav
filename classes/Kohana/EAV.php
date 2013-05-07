@@ -193,12 +193,12 @@ class Kohana_EAV extends ORM {
 		if($value)
 		{
 			// Get the attribute ID
-			$id = Arr::get($this->_eav_object, $column);
-			
-			$this->_eav_object[$column]->values(array(
+			$this->_eav_object[$column] = new EAV_Attribute(array(
+					'item_id' => $this->pk(),
+					'name'    => $column,
 					'type'    => gettype($value),
 					'value'   => $value,
-			));
+			), $this);
 		}
 		else
 		{

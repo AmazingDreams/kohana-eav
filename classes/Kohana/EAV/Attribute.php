@@ -119,14 +119,32 @@ class Kohana_EAV_Attribute {
 		{
 			$this->_query_type = DATABASE::UPDATE;
 			
-			$this->id = DB::insert($this->_master->attributes_table_name(), $this->_master->attribute_table_columns())
-					->values($this->get_values(self::ATTRIBUTES))
+			$master_columns = array(
+					$this->_master->attributes_table_columns('item_id'),
+					$this->_master->attributes_table_columns('type'),
+					$this->_master->attributes_table_columns('name'),
+			);
+			$attribute_values = array(
+					$this->item_id,
+					$this->type,
+					$this->name,
+			);
+			
+			$result = DB::insert($this->_master->attributes_table_name(), $master_columns)
+					->values($attribute_values)
 					->execute();
+			
+			$this->id = $result[0];
+			
+			$values_values = array(
+					'attribute_id' => $this->id,
+					'value'        => $this->value,
+			);
 			
 			DB::insert(
 					$this->_master->values_table_name(), 
-					Arr::merge(array($this->_master->values_table_columns('attribute_id')), $this->_master->values_table_columns())
-				)->values(Arr::merge(array($this->id), $this->get_values(self::VALUES)))
+					$this->_master->values_table_columns()
+				)->values($values_values)
 					->execute();
 		}
 		
@@ -145,7 +163,7 @@ class Kohana_EAV_Attribute {
 		if($table != self::ATTRIBUTES AND $table != self::VALUES)
 			throw new Kohana_Exception('No valid value specified');
 		
-		return array_values($this->{table});
+		return array_values($this->{$table});
 	}
 	
 	/**
