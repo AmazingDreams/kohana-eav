@@ -170,39 +170,6 @@ class Kohana_EAV extends ORM {
 	}
 	
 	/**
-	 * Gets existing attribute info from the tables
-	 */
-	protected function _get_attributes()
-	{
-		// Flag the attributes as loaded
-		$this->_attributes_loaded = TRUE;
-		
-		$result = DB::select(
-				array('attr_table.'. $this->attributes_table_columns('id'), 'id'),
-				array('attr_table.'. $this->attributes_table_columns('name'), 'name'),
-				array('attr_table.'. $this->attributes_table_columns('type'), 'type'),
-				array('val_table.'.  $this->values_table_columns('value'), 'value')
-		)->from(array($this->values_table_name(), 'val_table'))
-		 ->join(array($this->attributes_table_name(), 'attr_table'))->on('attr_table.'. $this->attributes_table_columns('id'), '=', 'val_table.'. $this->values_table_columns('attribute_id'))
-		 ->where('attr_table.'. $this->attributes_table_columns('item_id'), '=', $this->id)
-		 ->as_object()
-		 ->execute();
-		
-		foreach($result as $property)
-		{
-			$attribute = new EAV_Attribute(array(
-					'id'           => $property->id,
-					'name'         => $property->name,
-					'type'         => $property->type,
-					'value'        => $property->value,
-					'attribute_id' => $property->id,
-			), $this);
-			
-			$this->_eav_object[$property->name] = $attribute;
-		}
-	}
-	
-	/**
 	 * Gets or sets a (new) attribute
 	 * 
 	 * @param unknown $column
@@ -214,7 +181,7 @@ class Kohana_EAV extends ORM {
 		// Check if the attributes are loaded
 		if( ! $this->_attributes_loaded)
 		{
-			$this->_get_attributes();
+			$this->_load_attributes();
 		}
 		
 		// If no column is specified, return all attributes as objects
@@ -235,16 +202,77 @@ class Kohana_EAV extends ORM {
 		}
 		else
 		{
-			// Check if the attributes are loaded
-			if( ! $this->_attributes_loaded)
-			{
-				$this->_get_attributes();
-			}
-		
 			// Get the attribute value
 			$attribute = Arr::get($this->_eav_object, $column);
-			return ($attribute) ? $attribute->{$column} : NULL;
+			return ($attribute) ? $attribute : NULL;
 		}
+	}
+	
+	/**
+	 * Finds and loads a single database row into the object with attributes loaded
+	 * 
+	 * @chaineable
+	 * @see Kohana_ORM::find()
+	 * @return EAV object
+	 */
+	public function find()
+	{
+		$this->_join_tables();
+
+		return parent::find();
+	}
+	
+	/**
+	 * Finds multiple database rows and returns an iterator of the rows found
+	 * 
+	 * @chaineable
+	 * @see Kohana_ORM::find_all()
+	 * @return array EAV objects
+	 */
+	public function find_all()
+	{
+		$this->_join_tables();
+		
+		return parent::find_all();
+	}
+	
+	/**
+	 * Loads the attributes from the model
+	 */
+	protected function _load_attributes()
+	{
+		$this->_attributes_loaded = TRUE;
+		
+		$attributes = explode(';', Arr::get($this->_object, 'meta_data'));
+		unset($this->_object['meta_data']); // Clean up the mess
+		
+		foreach($attributes as $attribute)
+		{
+			$attribute = explode(',', $attribute);
+			
+			$attribute = new EAV_Attribute(array(
+					'id'           => Arr::get($attribute, 0),
+					'name'         => Arr::get($attribute, 1),
+					'type'         => Arr::get($attribute, 2),
+					'value'        => Arr::get($attribute, 3),
+					'attribute_id' => Arr::get($attribute, 0),
+			), $this);
+			
+			$this->_eav_object[$attribute->name] = $attribute;
+		}
+	}
+	
+	/**
+	 * Joins the three EAV tables together
+	 * 
+	 * @return Kohana_EAV
+	 */
+	private function _join_tables()
+	{
+		$this->join(array($this->attributes_table_name(), 'attr_table'), 'LEFT')->on('attr_table.'. $this->attributes_table_columns('item_id'), '=', $this->_object_name .'.'. $this->_primary_key)
+			->join(array($this->values_table_name(), 'val_table'), 'LEFT')->on('val_table.'. $this->values_table_columns('attribute_id'), '=', 'attr_table.'. $this->attributes_table_columns('id'));
+		
+		return $this;
 	}
 	
 	/**
@@ -303,5 +331,28 @@ class Kohana_EAV extends ORM {
 		
 		// Return self for chaineability
 		return $this;
+	}
+	
+	/**
+	 * Appends meta_data to the SELECT clause
+	 * 
+	 * (non-PHPdoc)
+	 * @see Kohana_ORM::_build_select()
+	 */
+	protected function _build_select()
+	{
+		$columns = parent::_build_select();
+		
+		$separator = ",";
+		$expresion = DB::expr('GROUP_CONCAT(
+				`attr_table`.`'. $this->attributes_table_columns('id') .'`, "'. $separator .'", 
+				`attr_table`.`'. $this->attributes_table_columns('name') .'`, "'. $separator .'",
+				`attr_table`.`'. $this->attributes_table_columns('type') .'`, "'. $separator .'",
+				`val_table`.`'. $this->values_table_columns('value') .'` SEPARATOR ";")'
+		);
+		
+		$columns[] = array($expresion, 'meta_data');
+		
+		return $columns;
 	}
 }
