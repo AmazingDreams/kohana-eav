@@ -36,6 +36,12 @@ class Kohana_EAV_Attribute {
 	private $_values_part = array();
 	
 	/**
+	 * Flags the object as modified or not
+	 * @var bool modified
+	 */
+	private $_modified = FALSE;
+	
+	/**
 	 * Creates a new EAV_Attribute
 	 * 
 	 * @param string $name
@@ -44,7 +50,7 @@ class Kohana_EAV_Attribute {
 	public function __construct($row, $master)
 	{
 		$this->_master = $master;
-		$this->values($row);
+		$this->_object = $row;
 	}
 	
 	/**
@@ -93,7 +99,8 @@ class Kohana_EAV_Attribute {
 		// Make sure everything is in the right place
 		$this->_reorder_object();
 		
-		if($this->id)
+		// Object is modified and not new, should be updated
+		if($this->_modified AND $this->id)
 		{
 			$array = array();
 
@@ -115,7 +122,7 @@ class Kohana_EAV_Attribute {
 					->where($this->_master->values_table_columns('attribute_id'), '=', $this->id)
 					->execute();
 		}
-		else
+		else if( ! $this->id) // Object has no id therefore it is new
 		{
 			$this->_query_type = DATABASE::UPDATE;
 			
@@ -146,6 +153,10 @@ class Kohana_EAV_Attribute {
 					$this->_master->values_table_columns()
 				)->values($values_values)
 					->execute();
+		}
+		else 
+		{
+			// Object is not modified and not new .. do nothing
 		}
 		
 		return $this;
@@ -186,5 +197,8 @@ class Kohana_EAV_Attribute {
 	public function __set($column, $value)
 	{
 		$this->_object[$column] = $value;
+		
+		// Flag the object as modified
+		$this->_modified = TRUE;
 	}
 }
