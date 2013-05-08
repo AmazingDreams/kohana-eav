@@ -99,6 +99,9 @@ class Kohana_EAV_Attribute {
 		// Make sure everything is in the right place
 		$this->_reorder_object();
 		
+		// Set master ID
+		$this->_object['item_id'] = $this->_master->pk();
+		
 		// Object is modified and not new, should be updated
 		if($this->_modified AND $this->id)
 		{

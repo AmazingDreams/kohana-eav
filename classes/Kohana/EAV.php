@@ -58,18 +58,18 @@ class Kohana_EAV extends ORM {
 	 */
 	public function __construct($id = NULL)
 	{
-		parent::__construct($id);
+		$this->_object_name = strtolower(str_replace('Model_', '', get_class($this)));
 		
 		// See if the attributes table name is set
 		if( ! Arr::get($this->_eav_table_info['attributes'], 'name'))
 		{
-			$this->_eav_table_info['attributes']['name'] = strtolower(str_replace('Model_', '', get_class($this)) .'_attributes');
+			$this->_eav_table_info['attributes']['name'] =  $this->_object_name .'_attributes';
 		}
 		
 		// See if the values table name is set
 		if( ! Arr::get($this->_eav_table_info['values'], 'name'))
 		{
-			$this->_eav_table_info['values']['name'] = strtolower(str_replace('Model_', '', get_class($this)) .'_attribute_values');
+			$this->_eav_table_info['values']['name'] = $this->_object_name .'_attribute_values';
 		}
 		
 		// See if the attribute table columns are filled in
@@ -77,7 +77,7 @@ class Kohana_EAV extends ORM {
 		{
 			Arr::set_path($this->_eav_table_info, 'attributes.columns', array(
 					'id'      => 'id',
-					'item_id' => Inflector::singular($this->table_name()) .'_id',
+					'item_id' => $this->_object_name .'_id',
 					'type'    => 'type',
 					'name'    => 'name',
 			));
@@ -91,6 +91,8 @@ class Kohana_EAV extends ORM {
 					'value'         => 'value',
 			));
 		}
+
+		parent::__construct($id);
 	}
 	
 	/**
@@ -178,8 +180,8 @@ class Kohana_EAV extends ORM {
 	 */
 	public function attr($column = NULL, $value = NULL)
 	{
-		// Check if the attributes are loaded
-		if( ! $this->_attributes_loaded)
+		// Check if the attributes are loaded and primary key is set
+		if( ! $this->_attributes_loaded AND $this->pk())
 		{
 			$this->_load_attributes();
 		}
