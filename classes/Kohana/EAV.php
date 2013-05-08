@@ -211,6 +211,31 @@ class Kohana_EAV extends ORM {
 	}
 	
 	/**
+	 * Delete specified attribute or delete all
+	 * 
+	 * @param string $column  leave empty to delete all
+	 * @return Kohana_EAV
+	 */
+	public function delete_attr($column = NULL)
+	{
+		$db = DB::delete($this->attributes_table_name());
+		
+		// No column specified, delete all
+		if( ! $column)
+		{
+			$db->where($this->attributes_table_columns('item_id'), '=', $this->pk());
+		}
+		else 
+		{
+			$db->where($this->attributes_table_columns('id'), '=', ($this->attr($column)) ? $this->attr($column)->id : '0');
+		}
+		
+		$db->execute();
+		
+		return $this;
+	}
+	
+	/**
 	 * Finds and loads a single database row into the object with attributes loaded
 	 * 
 	 * @chaineable
