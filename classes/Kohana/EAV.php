@@ -217,7 +217,7 @@ class Kohana_EAV extends ORM {
 	 */
 	public function find()
 	{
-		$this->_join_tables();
+		$this->_prepare_eav_query();
 
 		return parent::find();
 	}
@@ -231,7 +231,7 @@ class Kohana_EAV extends ORM {
 	 */
 	public function find_all()
 	{
-		$this->_join_tables();
+		$this->_prepare_eav_query();
 		
 		return parent::find_all();
 	}
@@ -267,10 +267,13 @@ class Kohana_EAV extends ORM {
 	 * 
 	 * @return Kohana_EAV
 	 */
-	private function _join_tables()
+	private function _prepare_eav_query()
 	{
 		$this->join(array($this->attributes_table_name(), 'attr_table'), 'LEFT')->on('attr_table.'. $this->attributes_table_columns('item_id'), '=', $this->_object_name .'.'. $this->_primary_key)
 			->join(array($this->values_table_name(), 'val_table'), 'LEFT')->on('val_table.'. $this->values_table_columns('attribute_id'), '=', 'attr_table.'. $this->attributes_table_columns('id'));
+		
+		// Add group by to prevent returning one row of NULL values
+		$this->group_by($this->_object_name .'.id');
 		
 		return $this;
 	}
