@@ -245,6 +245,12 @@ class Kohana_EAV extends ORM {
 	{
 		$this->_attributes_loaded = TRUE;
 		
+		$attributes = Arr::get($this->_object, 'meta_data');
+		
+		// Check if field is set
+		if( ! $attributes OR strlen($attributes) == 0)
+			return $this;
+		
 		$attributes = explode(';', Arr::get($this->_object, 'meta_data'));
 		unset($this->_object['meta_data']); // Clean up the mess
 		
