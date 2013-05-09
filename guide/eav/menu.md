@@ -1,2 +1,3 @@
-# [EAV]()
-- [Creating and using EAV models](models)
+## [EAV]()
+- [Creating EAV models](models)
+- [Using EAV models](using)
