@@ -51,6 +51,11 @@ class Kohana_EAV_Attribute {
 	{
 		$this->_master = $master;
 		$this->_object = $row;
+		
+		if($this->type != ($type = $this->get_type()))
+		{
+			$this->type = $type;
+		}
 	}
 	
 	/**
@@ -163,6 +168,29 @@ class Kohana_EAV_Attribute {
 		}
 		
 		return $this;
+	}
+	
+	/**
+	 * Get the values type
+	 * 
+	 * @return string type
+	 */	
+	public function get_type()
+	{
+		$value = $this->value;
+		
+		switch($value)
+		{
+			case is_numeric($value):
+				return 'integer';
+			break;
+			case is_string($value):
+				return 'string';
+			break;
+			default:
+				return 'unknown';
+			break;
+		}
 	}
 	
 	/**
