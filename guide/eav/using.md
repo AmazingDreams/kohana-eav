@@ -30,7 +30,7 @@ EAV makes the distinction between a newly added attribute and an existing attrib
 So the same principle applies to already existing objects.
 	
 ## Getting attributes from the model
-In the previous example we created a new model and saved it, for the sake of simplicity I'm going to assume it got a primary key value of about `1`.
+In the previous example we created a new model and saved it, for the sake of simplicity I'm going to assume it got a primary key value around `1`.
 
 	// Load a model with primary key value 1
 	$model = EAV::factory('Product', 1);
@@ -57,6 +57,22 @@ Which would output something like
 	example_attribute => some_other_value
 	another_attribute => another_value
 	some_attribute => some_value
+	
+## Searching for models with EAV
+EAV comes with a build-in attribute filtering system which allows for the familiar syntax with a slight naming adjustment.
+
+For example, to find all models with the attribute price greater than one hundred.
+
+	$models = EAV::factory('Product')->where_attr('price', '>', 100)->find_all();
+	
+Using a different function for the attributes enables us to keep the typical search method in. Let's say we want to find dog food with a weight lower than 10.
+
+	$models = EAV::factory('Product')
+			->where('name', 'LIKE', '%dog food%') // All products have a name
+			->and_where_attr('weight', '<', 10)   // Not all products have a 'weight'
+			->find_all();
+			
+Be aware of the fact that searching in an EAV system requires a lot of power and lots of 'where_attr' clauses require a lot of joining subtables at this point.
 
 ## A real world example
 
