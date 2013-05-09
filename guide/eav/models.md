@@ -5,6 +5,8 @@ To create a model for the table `products` in your database simply hang on to th
 	class Model_Product extends EAV {
 		...
 	}
+	
+## Table naming
 
 Leaving the model empty should in most cases be enough for both ORM and EAV to work. EAV would in this case guess the following:
 
@@ -26,72 +28,3 @@ Leaving the model empty should in most cases be enough for both ORM and EAV to w
 					),
 			),
 	);
-	
-## Adding attributes to the model
-
-EAV comes with a handy function to add attributes, simply use [`EAV::attr()`](../../guide-api/EAV#attr)
-
-	$model = EAV::factory('Product');
-	
-	$model->attr('example_attribute', 'example_value');
-	$model->attr('another_attribute', 'another_value');
-	$model->attr('some_attribute', 'some_value');
-	
-	// This will override the 'example_attribute' value
-	$model->attr('example_attribute', 'some_other_value');
-	
-	// This will save the model, and all attributes to the database
-	$model->save();
-
-## A real world example
-
-The form below should provide you with a form on which you can add 100 attributes to a single object
-
-	<?php echo Form::open(); ?>
-	
-	<?php echo Form::input('name'); ?>
-	<?php echo Form::textarea('description'); ?>
-	
-	<?php /* A hundred attributes! */ ?>
-	<?php for($i = 0; $i < 100; $i++); ?>
-		<?php echo Form::input('attr_name[]'); ?>
-		<?php echo Form::input('attr_value[]'); ?>
-	<?php endfor; ?>
-	
-	<?php echo Form::submit(); ?>
-	<?php echo Form::close(); ?>
-	
-The PHP code:
-
-	$product = EAV::factory('Product');
-	
-	$product->values($this->request->post(), array(
-			'name',
-			'description',
-	));
-			
-	$names = $this->request->post('attr_name');
-	$values = $this->request->post('attr_value');
-	$attributes = array();
-	
-	// Put them in an array in the form of $attr_name => $attr_value
-	for($i = 0; $i < count($names); $i++)
-	{
-		$attributes[$names[$i]] = $values[$i];
-	}
-	
-	foreach($attributes as $key => $value)
-	{
-		$product->attr($key, $value);
-	}
-	
-	try 
-	{
-		$product->save();
-	}
-	catch(ORM_Validation_Exception $e)
-	{
-		$errors = $e->errors('models');
-	}
-
-Note that it would be wise to set max_execution_time really high if you don't have a limit on the amount of attributes
