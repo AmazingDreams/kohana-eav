@@ -355,14 +355,14 @@ class Kohana_EAV extends ORM {
 	{
 		$this->join(array(
 				DB::select(
-						array('attr_t.'. Arr::get($this->_attributes_table_columns, 'item_id'), 'item_id'),
-						array('val_t.'. Arr::get($this->_values_table_columns, 'value'), 'value')
-				)->from(array($this->_values_table_name, 'val_t'))
-					->join(array($this->_attributes_table_name, 'attr_t'))->on('attr_t.'. Arr::get($this->_attributes_table_columns, 'id'), '=', 'val_t.'. Arr::get($this->_values_table_columns, 'attribute_id'))
-					->where('attr_t.'. Arr::get($this->_attributes_table_columns, 'name'), '=', $attribute)
+						array('attr_t.'. $this->attributes_table_columns('item_id'), 'item_id'),
+						array('val_t.'. $this->values_table_columns('value'), 'value')
+				)->from(array($this->values_table_name(), 'val_t'))
+					->join(array($this->attributes_table_name(), 'attr_t'))->on('attr_t.'. $this->attributes_table_columns('id'), '=', 'val_t.'. $this->values_table_columns('attribute_id'))
+					->where('attr_t.'. $this->attributes_table_columns('name'), '=', $attribute)
 					->having('value', $op, $value),
 				md5($attribute),
-		), 'INNER')->on(md5($attribute) .'.item_id', '=', Inflector::singular($this->_table_name) .'.'. $this->_primary_key);
+		), 'INNER')->on(md5($attribute) .'.item_id', '=', $this->_object_name .'.'. $this->_primary_key);
 							
 		
 		// Return self for chaineability
