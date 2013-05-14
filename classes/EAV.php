@@ -57,7 +57,8 @@ class EAV extends ORM {
 	 */
 	public function __construct($id = NULL)
 	{
-		$this->_object_name = strtolower(str_replace('Model_', '', get_class($this)));
+		// Initialize the object
+		$this->_initialize();
 		
 		// See if the attributes table name is set
 		if( ! Arr::get($this->_eav_table_info['attributes'], 'name'))
