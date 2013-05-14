@@ -20,8 +20,7 @@ class EAV extends ORM {
 	
 	/**
 	 * Stores the information about the eav_tables
-	 * 
-	 * @var unknown
+	 * @var Array
 	 */
 	protected $_eav_table_info = array(
 			'attributes' => array(),
@@ -30,7 +29,7 @@ class EAV extends ORM {
 	
 	/**
 	 * Stores the attribute values and information
-	 * @var array    attributes
+	 * @var Array
 	 */
 	protected $_eav_object = array();
 	
@@ -58,7 +57,8 @@ class EAV extends ORM {
 	 */
 	public function __construct($id = NULL)
 	{
-		$this->_object_name = strtolower(str_replace('Model_', '', get_class($this)));
+		// Initialize the object
+		$this->_initialize();
 		
 		// See if the attributes table name is set
 		if( ! Arr::get($this->_eav_table_info['attributes'], 'name'))
@@ -245,7 +245,7 @@ class EAV extends ORM {
 	public function find()
 	{
 		$this->_prepare_eav_query();
-
+		
 		return parent::find();
 	}
 	
@@ -270,14 +270,14 @@ class EAV extends ORM {
 	{
 		$this->_attributes_loaded = TRUE;
 		
-		$attributes = Arr::get($this->_object, 'meta_data');
+		$attributes = Arr::get($this->_object, 'eav_meta_data');
 		
 		// Check if field is set
 		if( ! $attributes OR strlen($attributes) == 0)
 			return $this;
 		
-		$attributes = explode(';', Arr::get($this->_object, 'meta_data'));
-		unset($this->_object['meta_data']); // Clean up the mess
+		$attributes = explode(';', Arr::get($this->_object, 'eav_meta_data'));
+		unset($this->_object['eav_meta_data']); // Clean up the mess
 		
 		foreach($attributes as $attribute)
 		{
@@ -302,6 +302,16 @@ class EAV extends ORM {
 	 */
 	private function _prepare_eav_query()
 	{
+		$separator = ",";
+		$expression = DB::expr('GROUP_CONCAT(
+				`attr_table`.`'. $this->attributes_table_columns('id') .'`, "'. $separator .'",
+				`attr_table`.`'. $this->attributes_table_columns('name') .'`, "'. $separator .'",
+				`attr_table`.`'. $this->attributes_table_columns('type') .'`, "'. $separator .'",
+				`val_table`.`'. $this->values_table_columns('value') .'` SEPARATOR ";")'
+		);
+		
+		$this->select(array($expression, 'eav_meta_data'));
+		
 		$this->join(array($this->attributes_table_name(), 'attr_table'), 'LEFT')->on('attr_table.'. $this->attributes_table_columns('item_id'), '=', $this->_object_name .'.'. $this->_primary_key)
 			->join(array($this->values_table_name(), 'val_table'), 'LEFT')->on('val_table.'. $this->values_table_columns('attribute_id'), '=', 'attr_table.'. $this->attributes_table_columns('id'));
 		
@@ -367,28 +377,5 @@ class EAV extends ORM {
 		
 		// Return self for chaineability
 		return $this;
-	}
-	
-	/**
-	 * Appends meta_data to the SELECT clause
-	 * 
-	 * (non-PHPdoc)
-	 * @see Kohana_ORM::_build_select()
-	 */
-	protected function _build_select()
-	{
-		$columns = parent::_build_select();
-		
-		$separator = ",";
-		$expresion = DB::expr('GROUP_CONCAT(
-				`attr_table`.`'. $this->attributes_table_columns('id') .'`, "'. $separator .'", 
-				`attr_table`.`'. $this->attributes_table_columns('name') .'`, "'. $separator .'",
-				`attr_table`.`'. $this->attributes_table_columns('type') .'`, "'. $separator .'",
-				`val_table`.`'. $this->values_table_columns('value') .'` SEPARATOR ";")'
-		);
-		
-		$columns[] = array($expresion, 'meta_data');
-		
-		return $columns;
 	}
 }
