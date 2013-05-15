@@ -11,7 +11,7 @@
  * 
  * [ref-eav] http://en.wikipedia.org/wiki/Entity-attribute-value_model
  * 
- * @package Kohana EAV module
+ * @package EAV module
  * @author Dennis Ruhe
  * @copyright (c) 2013-2013 Dennis Ruhe
  * @license see LICENSE.md

@@ -1,7 +1,7 @@
 <?php defined('SYSPATH') OR die('No direct script access.');
 
 /** 
- * @package Kohana/eav
+ * @package EAV module
  * @author Dennis Ruhe
  * @copyright (c) 2013-2013 Dennis Ruhe
  * @license see LICENSE.md
@@ -181,11 +181,20 @@ class EAV_Attribute {
 		
 		switch($value)
 		{
-			case is_numeric($value):
+			case is_integer($value):
 				return 'integer';
 			break;
 			case is_string($value):
 				return 'string';
+			break;
+			case is_bool($value):
+				return 'boolean';
+			break;
+			case is_double($value):
+				return 'double';
+			break;
+			case is_float($value):
+				return 'float';
 			break;
 			default:
 				return 'unknown';
@@ -228,6 +237,11 @@ class EAV_Attribute {
 	public function __set($column, $value)
 	{
 		$this->_object[$column] = $value;
+		
+		if($column == 'value')
+		{
+			$this->type = $this->get_type();
+		}
 		
 		// Flag the object as modified
 		$this->_modified = TRUE;
